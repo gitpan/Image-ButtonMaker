@@ -1,6 +1,6 @@
 package Image::ButtonMaker;
 
-our $VERSION  = 0.1;
+our $VERSION  = "0.1.2";
 
 use strict;
 use utf8;
@@ -56,14 +56,17 @@ sub replace_properties {
                 if(length($replace)) {
                     $properties->{$key} = $replace;
                 } else {
-                    print "Lexicon warning: lookup($lang_id, $value) returned nothing\n";
+                    print STDERR "WARNING: lexicon lookup($lang_id, $value) returned nothing\n";
                 }
             }
         }
 
         #### Path replacements ################################
         elsif($key eq 'TextFont') {
-            $properties->{$key} = $self->find_font_file($value);
+            my $filename = $self->find_font_file($value);
+            print STDERR "WARNING: could not find file for font: $value"
+              unless(defined $filename);
+            $properties->{$key} = $filename;
         }
         elsif($key eq 'CanvasTemplateImg') {
             $properties->{$key} = $self->find_image_file($value);
@@ -80,18 +83,18 @@ sub read_classfile {
     my $self      = shift;
     while(my $classfile = shift) {
         my $classcontainer = $self->{classes};
-        
+
         my $classList  = do $classfile;
         die "Error reading classfile $classfile: $@" if($@);
         die "Error reading classfile $classfile: $!" if($!);
-        
+
         foreach my $class (@$classList) {
             $self->replace_properties($class);
             my $class_obj = Image::ButtonMaker::ButtonClass->new(@$class);
             die "CLASSERR" unless($class_obj);
             $classcontainer->add_class($class_obj);
         }
-        
+
         die "Could not read classfile $classfile because:\n $@" if($@);
     }
 
@@ -112,7 +115,7 @@ sub read_buttonfile {
 
     foreach my $button (@$buttonList) {
         $self->replace_properties($button);
-        my $button_obj = Image::ButtonMaker::Button->new(@$button, 
+        my $button_obj = Image::ButtonMaker::Button->new(@$button,
                                                    classcontainer => $classcontainer);
         die "BUTTERR $Image::ButtonMaker::Button::errorstr" unless($button_obj);
 
@@ -214,7 +217,7 @@ sub find_font_file {
     my $self = shift;
     my $file = shift;
     my $dirs = $self->{font_dirs};
-    
+
     foreach my $d (@$dirs) {
         return "$d/$file" if(-f "$d/$file");
     }

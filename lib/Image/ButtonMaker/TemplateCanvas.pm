@@ -7,7 +7,7 @@ use Image::Magick;
 my @default_publ = (
 
                     template   => undef,
-                    
+
                     ### Cut parameters
                     cut_left   => 4,
                     cut_right  => 4,
@@ -20,7 +20,7 @@ my @default_publ = (
 
 
 my @default_priv = (
-                    slices => undef,                    
+                    slices => undef,
                     );
 
 
@@ -69,56 +69,57 @@ sub render($$) {
     ## Create the button image
     my $matte_color = $self->{matte_color};
     my $res = Image::Magick->new(size => $tot_w.'x'.$tot_h, matte => 1, mattecolor => $matte_color);
-    $res->Read("xc:rgba(0,0,0,255)");
-
+    $res->Read("xc:$matte_color");
 
     ## Top left corner
     $cur = $slc->[0]->Clone;
     $cur->Resize(width=> $left, height => $top);
-    $res->Composite(image => $cur, compose => 'over', geometry=>fromtop(0,0));
+    $res->Composite(image => $cur, compose => 'Over', geometry=>fromtop(0,0));
 
-    ## Top middle 
+    ## Top middle
     $cur = $slc->[1]->Clone;
     $cur->Resize(width=> $c_width, height => $top);
-    $res->Composite(image => $cur, compose => 'over', geometry=>fromtop($left,0));
+    $res->Composite(image => $cur, compose => 'Over', geometry=>fromtop($left,0));
 
     ## Top right corner
     $cur = $slc->[2]->Clone;
     $cur->Resize(width=> $right, height => $top);
-    $res->Composite(image => $cur, compose => 'over', geometry=>fromtop($left+$c_width, 0));
+    $res->Composite(image => $cur, compose => 'Over', geometry=>fromtop($left+$c_width, 0));
+
 
     ## Middle left part
     $cur = $slc->[3]->Clone;
-    $cur->Resize(width=> $left, height => $c_height);
-    $res->Composite(image => $cur, compose => 'over', geometry=>fromtop(0, $top));
+    $cur->Resize(width=> $left, height => $c_height, , blur => 0);
+    $res->Composite(image => $cur, compose => 'Over', geometry=>fromtop(0, $top));
 
     ## Middle middle part (Canvas)
     $cur = $slc->[4]->Clone;
-    $cur->Resize(width=> $c_width, height => $c_height);
-    $res->Composite(image => $cur, compose => 'over', geometry=>fromtop($left, $top));
-
+    $cur->Set(matte => 'True', mattecolor=> $matte_color);
+    $cur->Resize(width=> $c_width, height => $c_height, blur => 1, filter => 'Point');
+    $res->Composite(image => $cur, compose => 'Over', geometry=>fromtop($left, $top));
 
     ## Middle right part
     $cur = $slc->[5]->Clone;
-    $cur->Resize(width=> $right, height => $c_height);
-    $res->Composite(image => $cur, compose => 'over', geometry=>fromtop($left+$c_width, $top));
+    $cur->Resize(width=> $right, height => $c_height, , blur => 0);
+    $res->Composite(image => $cur, compose => 'Over', geometry=>fromtop($left+$c_width, $top));
+
 
     ## Bottom left part
     $cur = $slc->[6]->Clone;
     $cur->Resize(width=> $left, height => $bottom);
-    $res->Composite(image => $cur, compose => 'over', geometry=>fromtop(0, $top+$c_height));
+    $res->Composite(image => $cur, compose => 'Over', geometry=>fromtop(0, $top+$c_height));
 
-    ## Middle middle part (Canvas)
+    ## Bottom middle part (Canvas)
     $cur = $slc->[7]->Clone;
     $cur->Resize(width=> $c_width, height => $bottom);
-    $res->Composite(image => $cur, compose => 'over', geometry=>fromtop($left, $top+$c_height));
+    $res->Composite(image => $cur, compose => 'Over', geometry=>fromtop($left, $top+$c_height));
 
-    ## Middle right part
+    ## Bottom right part
     $cur = $slc->[8]->Clone;
     $cur->Resize(width=> $right, height => $bottom);
-    $res->Composite(image => $cur, compose => 'over', geometry=>fromtop($left+$c_width, $top+$c_height));
+    $res->Composite(image => $cur, compose => 'Over', geometry=>fromtop($left+$c_width, $top+$c_height));
 
-    return $res;    
+    return $res;
 }
 
 
@@ -142,7 +143,7 @@ sub slice_it_up($$$$$$) {
         set_error(1000, "Canvas Cut leaves no space for artwork") 
         if($middle_h < 1 || $middle_w < 1);
 
-    my $result = Image::Magick->new(mattecolor => $mattecolor, matte => 1);
+    my $result = Image::Magick->new(mattecolor => $mattecolor, matte => 'True');
     my $cur;
 
     #### Top left slice
@@ -168,6 +169,7 @@ sub slice_it_up($$$$$$) {
     ### Middle middle
     $cur = $image->Clone;
     $cur->Crop(width => $middle_w, height => $middle_h, x => $left, y => $top);
+    #$cur->Crop(geometry => "${middle_w}x${middle_h}+${left}+${top}");
     $result->[4] = $cur;
 
     ### Middle right

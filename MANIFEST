@@ -1,4 +1,13 @@
 Changes
+example/README.txt
+example/run.pl
+example/buttons.pl
+example/classes.pl
+example/pieces/aispec.ttf
+example/pieces/aqua-blue.png
+example/pieces/aqua-red.png
+example/pieces/aqua.gif
+example/pieces/blink.gif
 lib/Image/ButtonMaker.pm
 lib/Image/ButtonMaker/Button.pm
 lib/Image/ButtonMaker/ButtonClass.pm

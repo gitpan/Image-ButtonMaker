@@ -5,6 +5,8 @@ use Image::ButtonMaker::ButtonClass;
 use Image::ButtonMaker::ClassContainer;
 use Image::ButtonMaker::TextContainer;
 use Image::ButtonMaker::TemplateCanvas;
+use Image::ButtonMaker::ColorCanvas;
+
 
 use Image::Magick;
 
@@ -12,7 +14,7 @@ our @property_names = qw(
                          FileType
 
                          WidthMin
-                         WidthMax 
+                         WidthMax
                          HeightMin
                          HeightMax
 
@@ -31,12 +33,18 @@ our @property_names = qw(
                          CanvasCutLeft
                          CanvasCutTop
                          CanvasCutBottom
+                         CanvasMatteColor
+
+                         CanvasBackgroundColor
+                         CanvasBorderColor
+                         CanvasBorderWidth
 
                          Text
                          TextFont
                          TextColor
                          TextSize
                          TextAntiAlias
+                         TextScale
                          NoLexicon
 
                          IconName
@@ -73,16 +81,21 @@ my @default_priv = (
 sub new {
     my $invocant = shift;
     my $blessing = ref($invocant) || $invocant;
-    
+
     reset_error();
-    
+
     my %args = @_;
     my %prototype = ();
-
 
     #### Class argument check
     if(defined($args{classcontainer})) {
         $prototype{classcontainer} = $args{classcontainer};
+    }
+
+    if(defined($args{name})) {
+        $prototype{name} = $args{name};
+    } else {
+        return set_error(1000,"name for button not given");
     }
 
     if(defined($args{classname})) {
@@ -92,15 +105,9 @@ sub new {
             unless($container);
 
         return
-            set_error(1000, "Class $args{classname} not found")
+            set_error(1000, "Class $args{classname} not found for button $args{name}")
             unless($container->lookup_class($args{classname}));
         $prototype{classname} = $args{classname};
-    }
-
-    if(defined($args{name})) {
-        $prototype{name} = $args{name};
-    } else {
-        return set_error(1000,"name for button not given");
     }
 
     #### Property check
@@ -177,6 +184,7 @@ sub lookup_property {
         return
             set_error(2000, "Class not found ".$self->{classname})
             unless($class);
+
         return $class->lookup_property($propname);
     }
 
@@ -231,10 +239,14 @@ sub render {
     $idata->{artMinDesc} = $artMinDesc;
 
     #### Prepare Canvas
-    my $canvasobject; 
+    my $canvasobject;
     if($self->lookup_property('CanvasType') eq 'pixmap') {
         $canvasobject = $self->__prepare_pix_canvas;
     }
+    elsif($self->lookup_property('CanvasType') eq 'color') {
+        $canvasobject = $self->__prepare_color_canvas;
+    }
+
     return undef if($error);
 
     ## Render part should not depend on low level implementation of objects
@@ -396,7 +408,6 @@ sub set_error {
 }
 
 
-
 ### Private'ish methods #########################################################
 sub __prepare_pix_canvas {
     my $self = shift;
@@ -414,24 +425,51 @@ sub __prepare_pix_canvas {
         set_error(3000, "Could not read image file $imageName")
         if($res);
 
-    my $cut_left   = $self->lookup_property('CanvasCutLeft')   || 0;
-    my $cut_right  = $self->lookup_property('CanvasCutRight')  || 0;
-    my $cut_top    = $self->lookup_property('CanvasCutTop')    || 0;
-    my $cut_bottom = $self->lookup_property('CanvasCutBottom') || 0;
+    my $cut_left   = $self->lookup_property('CanvasCutLeft')    || 0;
+    my $cut_right  = $self->lookup_property('CanvasCutRight')   || 0;
+    my $cut_top    = $self->lookup_property('CanvasCutTop')     || 0;
+    my $cut_bottom = $self->lookup_property('CanvasCutBottom')  || 0;
+    my $matte_color= $self->lookup_property('CanvasMatteColor') || 'rgba(128,128,128,255)';
 
-    my $canvas = Image::ButtonMaker::TemplateCanvas->new(cut_left   => $cut_left, 
-                                                         cut_right  => $cut_right, 
-                                                         cut_top    => $cut_top, 
+    my $canvas = Image::ButtonMaker::TemplateCanvas->new(cut_left   => $cut_left,
+                                                         cut_right  => $cut_right,
+                                                         cut_top    => $cut_top,
                                                          cut_bottom => $cut_bottom,
+                                                         matte_color=> $matte_color,
                                                          template   => $i
                                                          );
 
     return
-        set_error(3000, "Could not create new canvas :".$Image::ButtonMaker::TemplateCanvas::errorstr)
+        set_error(3000, "Could not create new pixmap canvas :".$Image::ButtonMaker::TemplateCanvas::errorstr)
         unless($canvas);
 
     return $canvas;
 }
+
+
+sub __prepare_color_canvas {
+    my $self = shift;
+    reset_error();
+
+    my $background_color = $self->lookup_property('CanvasBackgroundColor');
+    my $border_color     = $self->lookup_property('CanvasBorderColor');
+    my $border_width     = $self->lookup_property('CanvasBorderWidth');
+
+
+    my %args;
+    $args{background_color} = $background_color if(length($background_color));
+    $args{border_color}     = $border_color if(length($border_color));
+    $args{border_width}     = $border_width if($border_width);
+
+    my $canvas = Image::ButtonMaker::ColorCanvas->new(%args);
+
+    return
+        set_error(3000, "Could not create new color canvas :".$Image::ButtonMaker::ColorCanvas::errorstr)
+        unless($canvas);
+
+    return $canvas;
+}
+
 
 sub __add_text_to_container {
     my $self = shift;
@@ -443,9 +481,12 @@ sub __add_text_to_container {
     my $fill = $self->lookup_property('TextColor');
     my $aali = $self->lookup_property('TextAntiAlias');
 
-    $aali = 'true'  if($aali eq 'yes');
-    $aali = 'false' if($aali eq 'no');
+    $aali = 'true'  if(lc($aali) eq 'yes');
+    $aali = 'false' if(lc($aali) eq 'no');
     $aali = 'true' unless($aali);
+
+    my $scale = $self->lookup_property('TextScale');
+    $scale = 1 unless defined($scale);
 
     my $res = $container->add_cell(type      => 'text',
                                    font      => $font,
@@ -453,6 +494,7 @@ sub __add_text_to_container {
                                    size      => $size,
                                    fill      => $fill,
                                    antialias => $aali,
+                                   scale     => $scale,
                                    );
     return
         set_error(3000, "Could not add cell : ".$container->get_errstr()."")
@@ -605,43 +647,44 @@ Image::ButtonMaker::Button - A Button object for the ButtonMaker module
 =head1 SYNOPSIS
 
   use Image::ButtonMaker::Button;
+
   my $but = Image::ButtonMaker::Button->new
            ( print_warnings => 1,
              name  => 'submitButton',
 
-             WidthMin         => 100,
-             HeightMin        => 55,
-             HeightMax        => 55,
-             
-             CanvasType        => 'pixmap',
-             CanvasTemplateImg => 'images/aqua.png',
-             CanvasCutRight    => 30,
-             CanvasCutLeft     => 30,
-             CanvasCutTop      => 10,
-             CanvasCutBottom   => 14,
-             
-             ArtWorkType   => 'text',
-             ArtWorkHAlign => 'center',
-             ArtWorkVAlign => 'baseline',
-             ArtWorkType   => 'icon+text',
-             
-             Text          => 'Submit Form',
-             TextColor     => '#000000',
-             TextSize      => 18,
-             TextFont      => 'fonts/NEUROPOL.ttf',
-             TextAntiAlias => 'no',
-             
-             IconName      => 'images/robot.png',
-             IconSpace     => 10,
-             
-             MarginLeft   => 25,
-             MarginRight  => 30,
-             MarginTop    => 8,
-             MarginBottom => 24,
-             
-             AfterResizeY => 30,
+             properties => {
+                            WidthMin         => 100,
+                            HeightMin        => 55,
+                            HeightMax        => 55,
 
-            ) or die "$Image::ButtonMaker::Button::errorstr";
+                            CanvasType        => 'pixmap',
+                            CanvasTemplateImg => 'pinky.png',
+                            CanvasCutRight    => 1,
+                            CanvasCutLeft     => 1,
+                            CanvasCutTop      => 2,
+                            CanvasCutBottom   => 2,
+
+                            ArtWorkType   => 'text',
+                            ArtWorkHAlign => 'center',
+                            ArtWorkVAlign => 'baseline',
+
+                            Text          => 'Submit Form',
+                            TextColor     => '#000000',
+                            TextSize      => 18,
+                            TextFont      => '/home/users/piotr/head/uws-hosts/globals/autobuttons/fonts/arial.ttf',
+                            TextAntiAlias => 'no',
+
+                            MarginLeft   => 25,
+                            MarginRight  => 30,
+                            MarginTop    => 8,
+                            MarginBottom => 24,
+
+                            AfterResizeY => 30,
+                            }
+
+           ) or die "$Image::ButtonMaker::Button::errorstr";
+
+  my $img = $but->render || die "$Image::ButtonMaker::Button::errorstr";
 
 =head1 DESCRIPTION
 
@@ -759,8 +802,10 @@ will be crossed by some letters like 'y' or 'j'.
 
 =item * CanvasType
 
-Canvas is the template of the button. At this point only one type is supported
-and it is 'pixmap'
+Canvas is the template of the button. At this point two types of canvas are supported
+and they are 'pixmap' and 'color'. 'pixmap' type uses a template which is sliced up and
+stretched for each button, while 'color' is just for plain rectangular buttons with plain
+background and a maybe a border.
 
 =item * CanvasTemplateImg
 
@@ -787,6 +832,20 @@ off and placed in the top stretch area.
 When CanvasType is set to 'pixmap' this is the number of pixels, that will be cut
 off and placed in the bottom stretch area.
 
+=item * CanvasBackgroundColor
+
+When CanvasType is set to 'color' this is the background color.
+
+=item * CanvasBorderColor
+
+When CanvasType is set to 'color' this is the border color.
+
+
+=item * CanvasBorderWidth
+
+When CanvasType is set to 'color' this is the border width. Border is only
+drawn when CanvasBorderWidth is different from 0.
+
 =item * Text
 
 This is the text to be rendered inside a button.
@@ -808,6 +867,10 @@ Text size. F.ex '9' or maybe even '11'
 =item * TextAntiAlias
 
 Make the text nice and soft in the edges. Options are 'yes' or 'no'.
+
+=item * TextScale
+
+Scale factor for the text. This one defaults to 1.0.
 
 =item * NoLexicon
 

@@ -7,5 +7,5 @@ WriteMakefile(
     VERSION_FROM      => 'lib/Image/ButtonMaker.pm', # finds $VERSION
     PREREQ_PM         => {Image::Magick => 5.0}, # e.g., Module::Name => 1.1
     ABSTRACT_FROM     => 'lib/Image/ButtonMaker.pm', # retrieve abstract from module
-    AUTHOR            => 'Piotr Czarny <piotr@sifira.dk>',
+    AUTHOR            => 'Piotr Czarny <picz@sifira.dk>',
 );

@@ -7,7 +7,8 @@ use utf8;
 
 #### Create a dummy image for QueryFontMetrics calls
 my $idummy = Image::Magick->new();
-$idummy->Read();
+$idummy->Read('xc:black');
+
 
 
 #### Prototype for TextContainer objects
@@ -39,19 +40,20 @@ use constant ERR_UNSUPPORTED_FEAT => 1000;
 my @cell_types = ('text', 'space', 'icon');
 my %cell_proto = (
                   text => {
-                           type      => 'text', 
+                           type      => 'text',
                            font      => '',
                            size      => 10,
                            text      => 'NO_TEXT',
                            antialias => 1,
                            fill      => 'white',
+                           scale     => 1.0,
                            },
-                  
+
                   space => {
                             type  => 'space',
                             width => 3,
                             },
-                  
+
                   icon  => {
                             type => 'icon',
                             image => undef,
@@ -66,7 +68,7 @@ my %cell_proto = (
 sub new {
     my $self  = shift;
     my @param = @_; 
-    
+
     my $data = { @defaults, @param };
 
     return undef unless(search_array($data->{layout}, \@layout_types));
@@ -105,7 +107,7 @@ sub add_cell {
     if(!search_array($type, \@cell_types)) {
         return $self->set_error(ERR_WRONG_CELL_TYPE,
                                 "Unknown cell type: $type");
-        
+
     }
 
     my $proto   = $cell_proto{$type};
@@ -145,8 +147,10 @@ sub compute_size {
         if($type eq 'text') {
             my %text_param =(font      => $cell->{font},
                              pointsize => $cell->{size},
+                             scale     => $cell->{scale},
                              text      => $cell->{text},
                              );
+
 
             my ($x_ppem, $y_ppem, $ascender, $descender, $width, $height, $max_advance) =
                 $idummy->QueryFontMetrics(%text_param);
@@ -231,6 +235,7 @@ sub render {
             $text_param{antialias} = $cell->{antialias};
             $text_param{fill}      = $cell->{fill};
             $text_param{stroke}    = 'rgba(0,0,0,255)';
+            $text_param{scale}     = $cell->{scale};
 
             if($align eq 'top') {
                 $toppoint = $ascender + $y_offset;
@@ -241,7 +246,7 @@ sub render {
             elsif($align eq 'baseline') {
                 $toppoint = $max_asc + $y_offset;;
             }
-            
+
             $text_param{x} = $leftpoint;
             $text_param{y} = $toppoint;
 
@@ -264,7 +269,7 @@ sub render {
             elsif($align eq 'baseline') {
                 $toppoint = $max_asc - $i_height + $y_offset;;
             }
-            
+
             my $vvv = $cell->{vertfix};
 
             if($cell->{vertfix}) {
@@ -273,8 +278,8 @@ sub render {
 
             $toppoint = 0 if($toppoint < 0);
 
-            $image->Composite(image   => $icon, 
-                              compose => 'over', 
+            $image->Composite(image   => $icon,
+                              compose => 'Over',
                               geometry=> fromtop($leftpoint, $toppoint)
                               );
             $leftpoint += $i_width;
@@ -283,8 +288,8 @@ sub render {
             $leftpoint += $cell->{width};
         }
     }
+
     return $image;
-    
 }
 
 
