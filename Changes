@@ -1,5 +1,11 @@
 Revision history for Perl extension Image::ButtonMaker.
 
+0.1.3 Fre May 21 2004
+        - fix for broken 0.1.2 release
+          added missing ColorCanvas.pm file to MANIFEST so that the
+          module actually can build.
+        - added TODO file
+
 0.1.2 Wed May 19 2004
         - a lot of small bugfixes
         - new type of canvas objects

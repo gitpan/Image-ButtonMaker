@@ -11,6 +11,7 @@ example/pieces/blink.gif
 lib/Image/ButtonMaker.pm
 lib/Image/ButtonMaker/Button.pm
 lib/Image/ButtonMaker/ButtonClass.pm
+lib/Image/ButtonMaker/ColorCanvas.pm
 lib/Image/ButtonMaker/ClassContainer.pm
 lib/Image/ButtonMaker/Lexicon.pm
 lib/Image/ButtonMaker/TemplateCanvas.pm
@@ -19,4 +20,5 @@ Makefile.PL
 MANIFEST
 META.yml			Module meta-data (added by MakeMaker)
 README
+TODO
 t/Image-ButtonMaker.t

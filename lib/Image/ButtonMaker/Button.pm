@@ -571,7 +571,7 @@ sub __prepare_text_plus_icon {
                       width => $space,
                       );
     }
-    my $res = $self->__add_icon_to_container($tc);
+    $res = $self->__add_icon_to_container($tc);
     return undef unless($res);
     return $tc;
 
@@ -601,7 +601,7 @@ sub __prepare_icon_plus_text {
                       );
     }
 
-    my $res = $self->__add_text_to_container($tc);
+    $res = $self->__add_text_to_container($tc);
     return undef unless($res);
     return $tc;
 
