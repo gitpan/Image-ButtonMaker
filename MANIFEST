@@ -1,0 +1,13 @@
+Changes
+lib/Image/ButtonMaker.pm
+lib/Image/ButtonMaker/Button.pm
+lib/Image/ButtonMaker/ButtonClass.pm
+lib/Image/ButtonMaker/ClassContainer.pm
+lib/Image/ButtonMaker/Lexicon.pm
+lib/Image/ButtonMaker/TemplateCanvas.pm
+lib/Image/ButtonMaker/TextContainer.pm
+Makefile.PL
+MANIFEST
+META.yml			Module meta-data (added by MakeMaker)
+README
+t/Image-ButtonMaker.t
