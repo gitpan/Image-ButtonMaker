@@ -1,6 +1,7 @@
 package Image::ButtonMaker::Button;
 use strict;
 use utf8;
+use locale;
 use Image::ButtonMaker::ButtonClass;
 use Image::ButtonMaker::ClassContainer;
 use Image::ButtonMaker::TextContainer;
@@ -45,6 +46,9 @@ our @property_names = qw(
                          TextSize
                          TextAntiAlias
                          TextScale
+                         TextUpperCase
+                         TextPrefix
+                         TextPostfix
                          NoLexicon
 
                          IconName
@@ -476,6 +480,13 @@ sub __add_text_to_container {
     my $container = shift;
 
     my $text = $self->lookup_property('Text');
+    $text = $text . $self->lookup_property('TextPostfix')
+      if($self->lookup_property('TextPostfix'));
+    $text = $self->lookup_property('TextPrefix') . $text
+         if($self->lookup_property('TextPrefix'));
+    $text = uc($text)
+      if($self->lookup_property('TextUpperCase'));
+
     my $font = $self->lookup_property('TextFont');
     my $size = $self->lookup_property('TextSize');
     my $fill = $self->lookup_property('TextColor');

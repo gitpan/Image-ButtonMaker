@@ -2,13 +2,14 @@ package Image::ButtonMaker::Lexicon;
 use strict;
 
 my @defaults = (
-                 
+
                  );
 
 my @default_priv = (
                      lexicons => undef,
                      error    => 0,
                      errorstr => undef,
+                     binmode  => ':utf8',
                      );
 
 #### Constructor method ########################################
@@ -36,6 +37,9 @@ sub read_lexiconfile {
 
     open INDATA, $filename ||
         return $self->set_error(1, "Could not open file: $filename") ;
+
+    binmode INDATA, $self->{binmode}
+      if($self->{binmode});
 
     my $linenum = 1;
 

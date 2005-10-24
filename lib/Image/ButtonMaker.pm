@@ -1,12 +1,13 @@
 package Image::ButtonMaker;
 
-our $VERSION  = '0.1.3';
+our $VERSION  = '0.1.4';
 
 use strict;
 use utf8;
 use Image::ButtonMaker::ButtonClass;
 use Image::ButtonMaker::ClassContainer;
 use Image::ButtonMaker::Lexicon;
+use locale;
 
 my @default = (
                image_dirs   => undef,
@@ -91,7 +92,8 @@ sub read_classfile {
         foreach my $class (@$classList) {
             $self->replace_properties($class);
             my $class_obj = Image::ButtonMaker::ButtonClass->new(@$class);
-            die "CLASSERR" unless($class_obj);
+            die "CLASSERROR ($Image::ButtonMaker::ButtonClass::error) $Image::ButtonMaker::ButtonClass::errorstr"
+              unless($class_obj);
             $classcontainer->add_class($class_obj);
         }
 

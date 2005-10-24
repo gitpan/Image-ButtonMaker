@@ -25,12 +25,12 @@ sub new {
     #### Check properites validity ####
     my $prop = $prototype{properties} || {};
     return
-        set_error(1000, "properties argument must be a HASH ref")
+        set_error(1001, "properties argument must be a HASH ref")
         if(ref($prop) ne 'HASH');
 
     foreach my $p (keys(%$prop)) {
         return
-            set_error(1000, "Illegal property: $p")
+            set_error(1002, "Illegal property: $p")
             unless(Image::ButtonMaker::Button->is_property_legal($p));
 
     }
